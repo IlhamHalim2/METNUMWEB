@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Kalkulator Metode Numerik</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+ <div class="container">
+
+  <!-- ═══════════════════════════════════════════════
+       HEADER
+  ════════════════════════════════════════════════ -->
+  <header>
+    <div class="header-icon">∫</div>
+    <h1>Kalkulator <span>Metode Numerik</span></h1>
+    <p>Pencarian akar persamaan nonlinear — f(x) = 0</p>
+    <span class="badge">Newton-Raphson &amp; Secant Method</span>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════
+       TABS
+  ════════════════════════════════════════════════ -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('newton')">⚡ Newton-Raphson</button>
+    <button class="tab" onclick="switchTab('secant')">〰 Metode Secant</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       PANEL: NEWTON-RAPHSON
+  ════════════════════════════════════════════════ -->
+  <div class="panel active" id="panel-newton">
+    <div class="card">
+      <div class="formula-box">
+        <p>Rumus: <code>x₁ = x₀ − f(x₀) / f'(x₀)</code> &nbsp;·&nbsp;
+           Memerlukan turunan f'(x). Konvergensi kuadratik (cepat).</p>
+      </div>
+
+      <p class="card-title">Contoh Fungsi Siap Pakai</p>
+      <div class="presets">
+        <button class="preset-btn" onclick="setPreset('newton','x^3-x-2','3*x^2-1','1.5')">x³ − x − 2</button>
+        <button class="preset-btn" onclick="setPreset('newton','x^2-4','2*x','1')">x² − 4</button>
+        <button class="preset-btn" onclick="setPreset('newton','cos(x)-x','-sin(x)-1','1')">cos(x) − x</button>
+        <button class="preset-btn" onclick="setPreset('newton','exp(x)-3*x','exp(x)-3','1')">eˣ − 3x</button>
+        <button class="preset-btn" onclick="setPreset('newton','x*sin(x)-1','sin(x)+x*cos(x)','1.1')">x·sin(x) − 1</button>
+        <button class="preset-btn" onclick="setPreset('newton','x^3-2*x-5','3*x^2-2','2')">x³ − 2x − 5</button>
+        <button class="preset-btn" onclick="setPreset('newton','log(x)-cos(x)','1/x+sin(x)','1.3')">ln(x) − cos(x)</button>
+      </div>
+
+      <div class="input-grid">
+        <div class="field input-full">
+          <label>f(x) — Fungsi</label>
+          <input id="n-fx" type="text" value="x^3-x-2" placeholder="Contoh: x^3 - x - 2" />
+          <p class="hint">Operator: ^ (pangkat) * (kali) / (bagi) + −  |  Fungsi: sin cos tan exp log sqrt abs  |  Konstanta: PI e  |  Perkalian implisit otomatis: 6x → 6*x</p>
+        </div>
+        <div class="field input-full">
+          <label>f'(x) — Turunan Fungsi</label>
+          <input id="n-dfx" type="text" value="3*x^2-1" placeholder="Contoh: 3*x^2 - 1" />
+        </div>
+        <div class="field">
+          <label>Tebakan Awal x₀</label>
+          <input id="n-x0" type="number" value="1.5" step="any" />
+        </div>
+        <div class="field">
+          <label>Toleransi Error (ε)</label>
+          <input id="n-tol" type="number" value="0.00001" step="any" />
+        </div>
+        <div class="field">
+          <label>Maksimum Iterasi</label>
+          <input id="n-maxiter" type="number" value="50" min="1" max="200" />
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="runNewton()">Hitung Akar</button>
+        <button class="btn btn-secondary" onclick="clearResult('newton')">Reset</button>
+      </div>
+    </div>
+
+    <!-- Hasil Newton -->
+    <div class="results" id="res-newton">
+      <div class="err-box" id="err-newton"></div>
+      <div class="result-summary" id="summary-newton"></div>
+      <div class="chart-wrap">
+        <canvas id="chart-newton" height="200"></canvas>
+      </div>
+      <div class="card">
+        <p class="card-title">Tabel Iterasi</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Iterasi</th>
+                <th>xₙ</th>
+                <th>f(xₙ)</th>
+                <th>f'(xₙ)</th>
+                <th>xₙ₊₁</th>
+                <th>|Galat|</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-newton"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       PANEL: SECANT
+  ════════════════════════════════════════════════ -->
+  <div class="panel" id="panel-secant">
+    <div class="card">
+      <div class="formula-box">
+        <p>Rumus: <code>x₂ = x₁ − f(x₁)·(x₁−x₀) / (f(x₁)−f(x₀))</code> &nbsp;·&nbsp;
+           Tanpa turunan. Konvergensi superlinear.</p>
+      </div>
+
+      <p class="card-title">Contoh Fungsi Siap Pakai</p>
+      <div class="presets">
+        <button class="preset-btn" onclick="setPreset('secant','x^3-x-2','','1','2')">x³ − x − 2</button>
+        <button class="preset-btn" onclick="setPreset('secant','x^2-4','','1','3')">x² − 4</button>
+        <button class="preset-btn" onclick="setPreset('secant','cos(x)-x','','0','1')">cos(x) − x</button>
+        <button class="preset-btn" onclick="setPreset('secant','exp(x)-3*x','','1','2')">eˣ − 3x</button>
+        <button class="preset-btn" onclick="setPreset('secant','x*sin(x)-1','','1','2')">x·sin(x) − 1</button>
+        <button class="preset-btn" onclick="setPreset('secant','x^3-2*x-5','','2','3')">x³ − 2x − 5</button>
+        <button class="preset-btn" onclick="setPreset('secant','log(x)-cos(x)','','1','2')">ln(x) − cos(x)</button>
+      </div>
+
+      <div class="input-grid">
+        <div class="field input-full">
+          <label>f(x) — Fungsi</label>
+          <input id="s-fx" type="text" value="x^3-x-2" placeholder="Contoh: x^3 - x - 2" />
+          <p class="hint">Operator: ^ (pangkat) * (kali) / (bagi) + −  |  Fungsi: sin cos tan exp log sqrt abs  |  Konstanta: PI e  |  Perkalian implisit otomatis: 6x → 6*x</p>
+        </div>
+        <div class="field">
+          <label>Tebakan Awal x₀</label>
+          <input id="s-x0" type="number" value="1" step="any" />
+        </div>
+        <div class="field">
+          <label>Tebakan Awal x₁</label>
+          <input id="s-x1" type="number" value="2" step="any" />
+        </div>
+        <div class="field">
+          <label>Toleransi Error (ε)</label>
+          <input id="s-tol" type="number" value="0.00001" step="any" />
+        </div>
+        <div class="field">
+          <label>Maksimum Iterasi</label>
+          <input id="s-maxiter" type="number" value="50" min="1" max="200" />
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="runSecant()">Hitung Akar</button>
+        <button class="btn btn-secondary" onclick="clearResult('secant')">Reset</button>
+      </div>
+    </div>
+
+    <!-- Hasil Secant -->
+    <div class="results" id="res-secant">
+      <div class="err-box" id="err-secant"></div>
+      <div class="result-summary" id="summary-secant"></div>
+      <div class="chart-wrap">
+        <canvas id="chart-secant" height="200"></canvas>
+      </div>
+      <div class="card">
+        <p class="card-title">Tabel Iterasi</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Iterasi</th>
+                <th>xₙ</th>
+                <th>f(xₙ)</th>
+                <th>xₙ₊₁</th>
+                <th>|Galat|</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-secant"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /.container -->
+
+<!-- ═══════════════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════════════════ -->
+<script>
+
+// ── Parser Fungsi ─────────────────────────────────────────
+function parseFunc(expr) {
+  let s = expr.trim();
+
+  // Ganti nama fungsi dulu sebelum manipulasi lain
+  s = s.replace(/\bsin\b/g,  'Math.sin')
+       .replace(/\bcos\b/g,  'Math.cos')
+       .replace(/\btan\b/g,  'Math.tan')
+       .replace(/\bexp\b/g,  'Math.exp')
+       .replace(/\bsqrt\b/g, 'Math.sqrt')
+       .replace(/\babs\b/g,  'Math.abs')
+       .replace(/\blog\b/g,  'Math.log')
+       .replace(/\bln\b/g,   'Math.log')
+       .replace(/\bPI\b/g,   'Math.PI')
+       .replace(/\bpi\b/g,   'Math.PI');
+
+  // Perkalian implisit: angka langsung diikuti variabel/fungsi/kurung
+  s = s
+    .replace(/(\d)(x)/g,       '$1*$2')   // 6x  → 6*x
+    .replace(/(\d)(Math\.)/g,  '$1*$2')   // 2sin → 2*Math.sin
+    .replace(/(\d)(\()/g,      '$1*$2')   // 3(  → 3*(
+    .replace(/(x)(\()/g,       '$1*$2')   // x(  → x*(
+    .replace(/(\))(\d)/g,      '$1*$2')   // )2  → )*2
+    .replace(/(\))(x)/g,       '$1*$2')   // )x  → )*x
+    .replace(/(\))(Math\.)/g,  '$1*$2');  // )sin → )*Math.sin
+
+  // Pangkat
+  s = s.replace(/\^/g, '**');
+
+  // Konstanta e tunggal (jangan konflik dengan Math.xxx)
+  s = s.replace(/(?<![a-zA-Z\.])e(?![a-zA-Z])/g, 'Math.E');
+
+  return new Function('x', '"use strict"; return ' + s + ';');
+}
+
+// ── Format Angka ──────────────────────────────────────────
+function fmt(v, d = 8) {
+  if (v === undefined || v === null || !isFinite(v)) return '—';
+  return Number(v).toFixed(d);
+}
+
+function fmtSci(v) {
+  if (!isFinite(v)) return '—';
+  if (Math.abs(v) < 0.0001 || Math.abs(v) >= 1e7) return v.toExponential(6);
+  return v.toPrecision(8);
+}
+
+// ── UI Helpers ────────────────────────────────────────────
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach((el, i) => {
+    el.classList.toggle('active',
+      (i === 0 && t === 'newton') || (i === 1 && t === 'secant')
+    );
+  });
+  document.getElementById('panel-newton').classList.toggle('active', t === 'newton');
+  document.getElementById('panel-secant').classList.toggle('active', t === 'secant');
+}
+
+function setPreset(method, fx, dfx, x0, x1) {
+  if (method === 'newton') {
+    document.getElementById('n-fx').value  = fx;
+    document.getElementById('n-dfx').value = dfx;
+    document.getElementById('n-x0').value  = x0;
+  } else {
+    document.getElementById('s-fx').value = fx;
+    document.getElementById('s-x0').value = x0;
+    document.getElementById('s-x1').value = x1 || '2';
+  }
+}
+
+function clearResult(method) {
+  document.getElementById('res-' + method).classList.remove('show');
+  document.getElementById('tbody-' + method).innerHTML = '';
+  document.getElementById('summary-' + method).innerHTML = '';
+  const e = document.getElementById('err-' + method);
+  e.style.display = 'none';
+  e.textContent = '';
+}
+
+function showErr(method, msg) {
+  const e = document.getElementById('err-' + method);
+  e.textContent = '⚠ ' + msg;
+  e.style.display = 'block';
+  document.getElementById('res-' + method).classList.add('show');
+}
+
+function renderSummary(id, root, froot, iters, converged) {
+  document.getElementById(id).innerHTML = `
+    <div class="stat">
+      <div class="stat-label">Nilai Akar (x)</div>
+      <div class="stat-value ${converged ? 'success' : 'fail'}">${fmtSci(root)}</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">f(akar)</div>
+      <div class="stat-value">${fmtSci(froot)}</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Jumlah Iterasi</div>
+      <div class="stat-value">${iters}</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Status</div>
+      <div class="stat-value ${converged ? 'success' : 'fail'}">${converged ? '✓ Konvergen' : '✗ Divergen'}</div>
+    </div>
+  `;
+}
+
+// ── Gambar Grafik Canvas ──────────────────────────────────
+function drawChart(canvasId, f, iterPoints) {
+  const canvas = document.getElementById(canvasId);
+  const W = canvas.parentElement.offsetWidth - 28;
+  const H = 200;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  // Rentang x
+  const xs = iterPoints.map(p => p.x).filter(isFinite);
+  if (!xs.length) return;
+  const xmin = Math.min(...xs), xmax = Math.max(...xs);
+  const xpad = Math.max((xmax - xmin) * 0.4, 0.8);
+  const lo = xmin - xpad, hi = xmax + xpad;
+  const N = 300, step = (hi - lo) / N;
+
+  // Rentang y
+  const fvals = [];
+  for (let i = 0; i <= N; i++) {
+    try { const v = f(lo + i * step); if (isFinite(v)) fvals.push(v); } catch (e) {}
+  }
+  if (!fvals.length) return;
+  let fmin = Math.min(...fvals), fmax = Math.max(...fvals);
+  const fpad = Math.max((fmax - fmin) * 0.12, 0.5);
+  fmin -= fpad; fmax += fpad;
+
+  const PL = 52, PR = 16, PT = 14, PB = 30;
+  const cW = W - PL - PR, cH = H - PT - PB;
+  const tx = v => PL + ((v - lo)  / (hi   - lo))   * cW;
+  const ty = v => PT + cH - ((v - fmin) / (fmax - fmin)) * cH;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 0.5;
+  for (let i = 1; i < 5; i++) {
+    const y = PT + cH * (i / 5);
+    ctx.beginPath(); ctx.moveTo(PL, y); ctx.lineTo(W - PR, y); ctx.stroke();
+  }
+  for (let i = 1; i < 5; i++) {
+    const x = PL + cW * (i / 5);
+    ctx.beginPath(); ctx.moveTo(x, PT); ctx.lineTo(x, PT + cH); ctx.stroke();
+  }
+
+  // Zero line (y = 0)
+  const zy = ty(0);
+  if (zy > PT && zy < PT + cH) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath(); ctx.moveTo(PL, zy); ctx.lineTo(W - PR, zy); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Kurva f(x) dengan glow
+  const grad = ctx.createLinearGradient(PL, 0, W - PR, 0);
+  grad.addColorStop(0, '#4f8ef7');
+  grad.addColorStop(0.5, '#00d4aa');
+  grad.addColorStop(1, '#4f8ef7');
+
+  ctx.shadowColor = '#00d4aa';
+  ctx.shadowBlur  = 8;
+  ctx.strokeStyle = grad;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  let started = false;
+  for (let i = 0; i <= N; i++) {
+    const xv = lo + i * step;
+    try {
+      const yv = f(xv);
+      if (!isFinite(yv)) { started = false; continue; }
+      const px = tx(xv), py = ty(yv);
+      if (!started) { ctx.moveTo(px, py); started = true; }
+      else          { ctx.lineTo(px, py); }
+    } catch (e) { started = false; }
+  }
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Titik iterasi (semakin terang = semakin baru)
+  iterPoints.forEach((p, i) => {
+    try {
+      const yv = f(p.x);
+      if (!isFinite(yv)) return;
+      const px = tx(p.x), py = ty(yv);
+      const alpha = 0.2 + 0.8 * (i / (iterPoints.length - 1 || 1));
+      ctx.fillStyle = `rgba(245,166,35,${alpha})`;
+      ctx.beginPath(); ctx.arc(px, py, 3.5, 0, Math.PI * 2); ctx.fill();
+    } catch (e) {}
+  });
+
+  // Marker akar akhir (x*)
+  const last = iterPoints[iterPoints.length - 1];
+  if (last) {
+    try {
+      const xr = last.x, yr = f(xr);
+      if (isFinite(yr)) {
+        const px = tx(xr);
+        const pzy = (zy > PT && zy < PT + cH) ? zy : ty(yr);
+
+        ctx.strokeStyle = '#00d4aa'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
+        ctx.shadowColor = '#00d4aa'; ctx.shadowBlur = 6;
+        ctx.beginPath(); ctx.moveTo(px, pzy); ctx.lineTo(px, ty(yr)); ctx.stroke();
+        ctx.setLineDash([]); ctx.shadowBlur = 0;
+
+        ctx.shadowColor = '#00d4aa'; ctx.shadowBlur = 12;
+        ctx.fillStyle = '#00d4aa';
+        ctx.beginPath(); ctx.arc(px, pzy, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.shadowBlur = 0;
+
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 9px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('x*', px, pzy + 3.5);
+      }
+    } catch (e) {}
+  }
+
+  // Label sumbu
+  ctx.fillStyle = '#475569';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  [lo, (lo + hi) / 2, hi].forEach(v => ctx.fillText(v.toFixed(2), tx(v), H - 8));
+  ctx.textAlign = 'right';
+  [fmin, (fmin + fmax) / 2, fmax].forEach(v => ctx.fillText(v.toFixed(1), PL - 4, ty(v) + 4));
+}
+
+
+</script>
+<script src="node_modules/mathjs/lib/browser/math.js"></script>
+<script src="newton-raphson.js"></script>
+<script src="secant.js"></script>
+</body>
+</html>
